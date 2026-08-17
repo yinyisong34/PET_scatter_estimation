@@ -4,7 +4,7 @@ def convert_PDF_to_bin_probability(PDF, dE):
     PDF_bin_prob = (np.asarray(PDF) * dE) / np.maximum((np.sum((np.asarray(PDF) * dE))), 1e-8)
     return PDF_bin_prob
 
-def derive_basis_NEGML(U_E, S_E, dE):
+def derive_shared_1d_factorised_basis(U_E, S_E, dE):
     U_bin = convert_PDF_to_bin_probability(U_E, dE)
     S_bin = convert_PDF_to_bin_probability(S_E, dE)
 
@@ -16,7 +16,7 @@ def derive_basis_NEGML(U_E, S_E, dE):
     basis = np.stack([C0, C1, C2, C3], axis=0)
     return basis
 
-def derive_2D_basis_NEGML(U1_E, S1_E, U2_E, S2_E, dE):
+def derive_separate_1d_factorised_basis(U1_E, S1_E, U2_E, S2_E, dE):
     U1_bin = convert_PDF_to_bin_probability(U1_E, dE)
     S1_bin = convert_PDF_to_bin_probability(S1_E, dE)
     U2_bin = convert_PDF_to_bin_probability(U2_E, dE)
@@ -30,7 +30,7 @@ def derive_2D_basis_NEGML(U1_E, S1_E, U2_E, S2_E, dE):
     basis = np.stack([C0, C1, C2, C3], axis=0)
     return basis
 
-def derive_original_2D_basis_NEGML(mask, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
+def derive_ground_truth_2d_basis(mask, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
     C0_histogram = np.sum(c0_sinogram_with_energy_info * mask[None, None, None, None, :, :], axis=(2,3,4,5))
     C1_histogram = np.sum(c1_sinogram_with_energy_info * mask[None, None, None, None, :, :], axis=(2,3,4,5))
     C2_histogram = np.sum(c2_sinogram_with_energy_info * mask[None, None, None, None, :, :], axis=(2,3,4,5))

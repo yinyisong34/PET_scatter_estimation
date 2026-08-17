@@ -17,7 +17,6 @@ def estimate_nonscatter_PDF(resolution_percentage, energies):
     # Estimate non-scatter PDF
     FWHM = 511 * 0.01 * resolution_percentage #det.rec - energy_resolution_percentage = ?
     sigma_511 = FWHM / math.sqrt(8 * math.log(2))
-    print(4*sigma_511)
 
     PDF_nonscatter = []
     for i in (energies):

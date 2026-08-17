@@ -80,3 +80,5 @@ def derive_blue_pink(c0_sinogram_with_energy_info, c1_sinogram_with_energy_info,
     blue1_pink0 = np.sum(c2_sinogram_with_energy_info, axis=(2,3,4,5))
     blue1_pink1 = np.sum(c3_sinogram_with_energy_info, axis=(2,3,4,5))
     return blue0_pink0, blue0_pink1, blue1_pink0, blue1_pink1
+
+
