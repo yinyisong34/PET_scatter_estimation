@@ -1,7 +1,28 @@
+"""Plotting and labelling utilities for the EBSE/NEGML analysis.
+
+The functions in this module split fitted NEGML components, generate labels
+from analysis settings, compare fitted and ground-truth sinograms, and
+visualise individual energy-basis images."""
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 def sigma_0123(sigma_negml):
+    """Split a four-component NEGML result and form the total scatter estimate.
+    
+    Parameters
+    ----------
+    sigma_negml : numpy.ndarray
+        Coefficient array whose first axis contains the four fitted components
+        C0, C1, C2, and C3.
+    
+    Returns
+    -------
+    sigma0, sigma1, sigma2, sigma3 : numpy.ndarray
+        Individual fitted coefficient arrays.
+    sigma_scatter : numpy.ndarray
+        Combined scatter estimate ``sigma1 + sigma2 + sigma3``.
+    """
     sigma0 = sigma_negml[0]
     sigma1 = sigma_negml[1]
     sigma2 = sigma_negml[2]
@@ -20,8 +41,34 @@ def get_negml_labels(
     pixel_length,
     sino_shape
 ):
-    """
-    Generate labels automatically from the actual NEGML configuration.
+    """Generate descriptive plot labels from the NEGML configuration.
+    
+    Parameters
+    ----------
+    basis_function : callable
+        Basis-construction function used in the fit.
+    U_true_or_predict : str
+        Source flag for the non-scatter PDF, typically ``"true"`` or
+        ``"predicted"``.
+    S_true_or_predict : str
+        Source flag for the scatter PDF, typically ``"true"`` or
+        ``"predicted"``.
+    pixel_width, pixel_length : int
+        Spatial region dimensions used for basis estimation.
+    sino_shape : tuple
+        Spatial sinogram shape. The final two entries are interpreted as the
+        view and tangential dimensions.
+    
+    Returns
+    -------
+    U_label : str
+        Human-readable non-scatter PDF label.
+    S_label : str
+        Human-readable scatter PDF label.
+    basis_label : str
+        Human-readable basis-construction label.
+    spatial_label : str
+        Label identifying the global or multi-region spatial model.
     """
 
     # ---------------------------------------------------------
@@ -106,10 +153,35 @@ def plot_negml_results(
     spatial_label,
     view_idx=16
 ):
-
-    # ---------------------------------------------------------
-    # Plot
-    # ---------------------------------------------------------
+    """Plot fitted and ground-truth scatter/non-scatter sinogram profiles.
+    
+    A 2-by-2 figure is produced containing scatter and non-scatter comparisons
+    at one selected view and after averaging over the axial and view axes.
+    
+    Parameters
+    ----------
+    scatter_sinogram : numpy.ndarray
+        Ground-truth total scatter sinogram.
+    nonscatter_sinogram : numpy.ndarray
+        Ground-truth non-scatter sinogram.
+    sigma_scatter_negml : numpy.ndarray
+        NEGML-estimated total scatter sinogram.
+    sigma0_negml : numpy.ndarray
+        NEGML-estimated non-scatter (C0) sinogram.
+    U_label, S_label : str
+        Labels describing the PDF sources.
+    basis_label : str
+        Label describing the basis construction.
+    spatial_label : str
+        Label describing the spatial basis model.
+    view_idx : int, optional
+        View index shown in the selected-view panels. Default is 16.
+    
+    Returns
+    -------
+    None
+        The figure is displayed and then closed.
+    """
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
@@ -250,23 +322,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_basis(pixel, basis_type, basis_idx, resolution=10, basis_data=None):
-    """
-    Plot one basis image with an automatically generated title.
-
+    """Plot one 2D basis component with an automatically generated title.
+    
     Parameters
     ----------
-    pixel : tuple
-        Pixel location, e.g. (16, 10)
-    basis_type : str
-        One of: "shared", "separate", "GT_2D"
+    pixel : tuple of int
+        View--tangential pixel location, for example ``(16, 10)``.
+    basis_type : {"shared", "separate", "GT_2D", "ground_truth", "ground-truth"}
+        Basis representation to label.
     basis_idx : int
-        Basis index: 0, 1, 2, or 3
-    resolution : int
-        Used only if basis_data is None, to construct variable name automatically
+        Basis component index: 0, 1, 2, or 3.
+    resolution : int, optional
+        Resolution value used only to construct the fallback variable name when
+        ``basis_data`` is not supplied. Default is 10.
     basis_data : array-like, optional
-        If provided, use this directly.
-        If None, the function will try to find a global variable named:
-        basis_resolution_{resolution}_pixel_{i}_{j}_{basis_type}
+        Basis array to plot directly. If omitted, the function searches the
+        caller's global namespace for a variable named
+        ``basis_resolution_{resolution}_pixel_{i}_{j}_{basis_type}``.
+    
+    Returns
+    -------
+    None
+        Displays the requested basis image.
+    
+    Raises
+    ------
+    ValueError
+        If ``basis_type`` or ``basis_idx`` is invalid, or if the expected basis
+        variable cannot be found when ``basis_data`` is omitted.
     """
 
     i, j = pixel

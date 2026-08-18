@@ -1,3 +1,10 @@
+"""NEGML coefficient-estimation and initialisation utilities.
+
+This module contains the one-dimensional weighted fitting used to initialise
+the four EBSE coefficients, the four-parameter NEGML update for a joint
+energy histogram, and a wrapper for applying a fixed basis throughout a
+sinogram."""
+
 import numpy as np
 import math
 from scipy.ndimage import gaussian_filter1d
@@ -7,6 +14,22 @@ from basis_functions import convert_PDF_to_bin_probability
 
 
 def system_matrix_A(U_E, S_E, dE):
+    """Construct the 1D two-component system matrix used for initialisation.
+    
+    Parameters
+    ----------
+    U_E, S_E : array-like
+        Sampled non-scatter and scatter energy PDFs.
+    dE : float
+        Energy-bin width in keV.
+    
+    Returns
+    -------
+    numpy.ndarray
+        Matrix of shape ``(n_energy, 2)`` whose columns contain the discrete
+        non-scatter and scatter bin probabilities.
+    """
+
     # U_E and and S_E are the PDF of non-scatter photons and scattered photons repespectively.
     U_E_bin = convert_PDF_to_bin_probability(U_E, dE)
     S_E_bin = convert_PDF_to_bin_probability(S_E, dE)
@@ -15,11 +38,41 @@ def system_matrix_A(U_E, S_E, dE):
 
 
 def prompt_histogram_1D_y1_and_y2 (total_histogram):
+    """Compute the two marginal energy histograms of a joint prompt spectrum.
+    
+    Parameters
+    ----------
+    total_histogram : numpy.ndarray
+        Joint energy histogram with dimensions ``(E1, E2)``.
+    
+    Returns
+    -------
+    y1_E : numpy.ndarray
+        First-photon marginal obtained by summing over E2.
+    y2_E : numpy.ndarray
+        Second-photon marginal obtained by summing over E1.
+    """
     y1_E = np.sum(total_histogram, axis = 1)
     y2_E = np.sum(total_histogram, axis = 0)
     return y1_E, y2_E
 
 def Cy_setup_initialization(y1_E, y2_E):
+    """Initialise diagonal variance estimates for the two marginal spectra.
+    
+    Each marginal prompt spectrum is smoothed with a Gaussian whose FWHM is
+    three energy bins. The smoothed counts are then used as Poisson-like
+    variance estimates for the weighted initialisation fit.
+    
+    Parameters
+    ----------
+    y1_E, y2_E : array-like
+        First- and second-photon marginal prompt-energy histograms.
+    
+    Returns
+    -------
+    Cy1, Cy2 : numpy.ndarray
+        Diagonal variance vectors for the two marginal fits.
+    """
     # FWHM = 3 energy bins
     FWHM_bins = 3
 
@@ -41,12 +94,56 @@ def Cy_setup_initialization(y1_E, y2_E):
     return Cy1, Cy2
 
 def L(p, yl, A_bin, Cy_diag):
+    """Evaluate the weighted least-squares objective used for initialisation.
+    
+    Parameters
+    ----------
+    p : array-like
+        Current two-component coefficient vector.
+    yl : array-like
+        Observed one-dimensional marginal spectrum.
+    A_bin : numpy.ndarray
+        System matrix containing non-scatter and scatter bin probabilities.
+    Cy_diag : array-like
+        Diagonal variance estimate for each energy bin.
+    
+    Returns
+    -------
+    float
+        Weighted sum of squared residuals.
+    """
     residual = yl - A_bin @ p
     L = np.sum((residual**2)/Cy_diag)
     return L
 
 
 def iteration (L, p0, A_bin, y1_E, y2_E, Cy1, Cy2):
+    """Perform one variance-update cycle for both marginal initialisation fits.
+    
+    Non-negative weighted least-squares fits are performed independently for
+    the first and second marginal spectra using the current variance estimates.
+    The fitted model values are then used to update those variances.
+    
+    Parameters
+    ----------
+    L : callable
+        Objective function used by ``scipy.optimize.minimize``.
+    p0 : array-like
+        Initial coefficient vector for each marginal fit.
+    A_bin : numpy.ndarray
+        Two-component system matrix.
+    y1_E, y2_E : array-like
+        Marginal prompt-energy histograms.
+    Cy1, Cy2 : array-like
+        Current diagonal variance estimates.
+    
+    Returns
+    -------
+    p_hat_1, p_hat_2 : numpy.ndarray
+        Fitted non-scatter/scatter coefficients for the two marginals.
+    Cy1, Cy2 : numpy.ndarray
+        Updated diagonal variance estimates.
+    """
     eps = 1e-8
 
     result1 = minimize(
@@ -77,6 +174,28 @@ def iteration (L, p0, A_bin, y1_E, y2_E, Cy1, Cy2):
 
 
 def initialize_coefficients_for_NEGML(L, A_bin, y1_E, y2_E):
+    """Estimate a four-component starting vector for the NEGML fit.
+    
+    The two marginal spectra are fitted as non-scatter/scatter mixtures. Their
+    normalised fitted fractions are combined under a factorised assumption and
+    scaled by the total number of events to initialise the UU, US, SU, and SS
+    coefficients.
+    
+    Parameters
+    ----------
+    L : callable
+        Weighted objective function used by the marginal fits.
+    A_bin : numpy.ndarray
+        Two-column non-scatter/scatter system matrix.
+    y1_E, y2_E : array-like
+        First- and second-photon marginal prompt-energy histograms.
+    
+    Returns
+    -------
+    numpy.ndarray
+        Initial four-component coefficient vector ordered as
+        ``[UU, US, SU, SS]``.
+    """
     Cy1, Cy2 = Cy_setup_initialization(y1_E, y2_E)
 
     p0 = np.ones(A_bin.shape[1])   # initial guess
@@ -99,12 +218,37 @@ def initialize_coefficients_for_NEGML(L, A_bin, y1_E, y2_E):
 
 def negml_4param(y_2D, basis, r_hat_2D=None, theta_init=None,
                  n_iter=100, eps=1e-8):
+    """Fit four non-negative EBSE coefficients to a joint energy histogram.
+    
+    The current model is formed as a weighted sum of the four supplied basis
+    images. Each coefficient is updated sequentially using the implemented
+    NEGML coordinate update and constrained to remain non-negative.
+    
+    Parameters
+    ----------
+    y_2D : array-like
+        Measured joint prompt-energy histogram with shape
+        ``(n_energy, n_energy)``.
+    basis : array-like
+        Four basis images with shape ``(4, n_energy, n_energy)``, conventionally
+        ordered as UU, US, SU, and SS.
+    r_hat_2D : array-like, optional
+        Estimated random-coincidence joint-energy histogram. If omitted, a zero
+        array is used.
+    theta_init : array-like, optional
+        Initial four-component coefficient vector. If omitted, all coefficients
+        start at one.
+    n_iter : int, optional
+        Number of complete sequential-update iterations. Default is 100.
+    eps : float, optional
+        Numerical floor used to avoid division by zero. Default is ``1e-8``.
+    
+    Returns
+    -------
+    numpy.ndarray
+        Fitted non-negative coefficient vector of length four.
     """
-    y_2D: measured 2D energy histogram
-    basis: shape (4, nE, nE), containing UU, US, SU, SS
-    r_hat_2D: estimated random 2D histogram, same shape as y_2D
-    theta_init: initial coefficients, length 4 in this case
-    """
+
 
     y_2D = np.asarray(y_2D, dtype=float) # shape (10, )
     basis = np.asarray(basis, dtype=float) # shape (4, 10, 10)
@@ -153,6 +297,31 @@ def negml_4param(y_2D, basis, r_hat_2D=None, theta_init=None,
 
 
 def multi_micro_negml_4param(sino_shape, Y, basis, theta, n_iter=100):
+    """Apply a fixed four-component basis independently to every sinogram bin.
+    
+    The relative fractions of the supplied global initial coefficients are
+    scaled by the total counts in each local joint-energy histogram before
+    calling ``negml_4param``.
+    
+    Parameters
+    ----------
+    sino_shape : tuple
+        Spatial sinogram shape.
+    Y : numpy.ndarray
+        Energy-resolved prompt data with shape
+        ``(E1, E2) + sino_shape``.
+    basis : numpy.ndarray
+        Fixed four-component energy basis.
+    theta : array-like
+        Global initial coefficient vector whose fractions are reused locally.
+    n_iter : int, optional
+        Number of NEGML iterations per spatial bin. Default is 100.
+    
+    Returns
+    -------
+    numpy.ndarray
+        Fitted coefficient array with shape ``(4,) + sino_shape``.
+    """
     sigma_negml = np.zeros((4,) + sino_shape)
 
     fraction = theta / np.sum(theta)

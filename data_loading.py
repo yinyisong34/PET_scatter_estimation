@@ -1,8 +1,43 @@
+"""Loading and aggregation utilities for energy-resolved SimSET/STIR data.
+
+The functions in this module read the converted energy-resolved projection
+files, assemble the four Monte Carlo scatter-history components C0--C3,
+and derive global energy histograms or spatial sinograms used by the EBSE
+analysis."""
+
 import sirf.STIR as PET
 import numpy as np
 from pathlib import Path
 
 def derive_sinogram_with_energy_bin_info_full(folder_path):
+    """Load all energy-resolved C0--C3 projection files from a simulation folder.
+    
+    The expected filenames encode the energy bins and scatter histories of the
+    two detected photons. Ten E1 bins and ten E2 bins are loaded for each of the
+    four Monte Carlo categories.
+    
+    Parameters
+    ----------
+    folder_path : str or pathlib.Path
+        Directory containing the converted STIR ``.hs`` acquisition files.
+    
+    Returns
+    -------
+    sino_shape : tuple
+        Shape of one spatial sinogram, typically ordered as
+        ``(segment, axial, view, tangential)``.
+    Y_full : numpy.ndarray
+        Total energy-resolved prompt data obtained as C0 + C1 + C2 + C3.
+    c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info : numpy.ndarray
+        Energy-resolved sinograms for the four scatter-history categories.
+        Each array has shape ``(10, 10) + sino_shape``.
+    
+    Raises
+    ------
+    FileNotFoundError
+        If the sample file or any expected energy/scatter-category file is
+        missing.
+    """
     folder_path = Path(folder_path)
 
     # Read one file first to determine the sinogram shape
@@ -55,6 +90,24 @@ def derive_sinogram_with_energy_bin_info_full(folder_path):
 
 
 def derive_sinogram(c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
+    """Collapse the energy dimensions to obtain spatial ground-truth sinograms.
+    
+    Parameters
+    ----------
+    c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info : numpy.ndarray
+        Energy-resolved C0--C3 arrays with E1 and E2 as the first two axes.
+    
+    Returns
+    -------
+    c0_sinogram, c1_sinogram, c2_sinogram, c3_sinogram : numpy.ndarray
+        Spatial sinograms for each Monte Carlo scatter-history category.
+    nonscatter_sinogram : numpy.ndarray
+        Ground-truth non-scatter sinogram, equal to C0.
+    scatter_sinogram : numpy.ndarray
+        Ground-truth total scatter sinogram, equal to C1 + C2 + C3.
+    total_sinogram : numpy.ndarray
+        Sum of the non-scatter and scatter sinograms.
+    """
     c0_sinogram = np.sum(c0_sinogram_with_energy_info, axis=(0,1))
     c1_sinogram = np.sum(c1_sinogram_with_energy_info, axis=(0,1))
     c2_sinogram = np.sum(c2_sinogram_with_energy_info, axis=(0,1))
@@ -75,6 +128,20 @@ def derive_sinogram(c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, 
 
 
 def derive_blue_pink(c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
+    """Collapse all spatial dimensions to obtain global joint-energy histograms.
+    
+    Parameters
+    ----------
+    c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info : numpy.ndarray
+        Energy-resolved Monte Carlo sinograms.
+    
+    Returns
+    -------
+    blue0_pink0, blue0_pink1, blue1_pink0, blue1_pink1 : numpy.ndarray
+        Global ``(E1, E2)`` histograms for the four combinations of photon
+        scatter history. With the current 10-bin data these arrays have shape
+        ``(10, 10)``.
+    """
     blue0_pink0 = np.sum(c0_sinogram_with_energy_info, axis=(2,3,4,5))
     blue0_pink1 = np.sum(c1_sinogram_with_energy_info, axis=(2,3,4,5))
     blue1_pink0 = np.sum(c2_sinogram_with_energy_info, axis=(2,3,4,5))
