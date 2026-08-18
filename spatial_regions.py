@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Spatial masking and regional energy-distribution utilities.
 
 This module creates view--tangential masks, extracts energy-resolved data

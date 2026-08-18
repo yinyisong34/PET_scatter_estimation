@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Plotting and labelling utilities for the EBSE/NEGML analysis.
 
 The functions in this module split fitted NEGML components, generate labels

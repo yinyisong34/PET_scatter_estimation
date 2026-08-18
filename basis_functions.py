@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Utilities for constructing energy-domain basis functions for EBSE.
 
 This module converts sampled one-dimensional energy PDFs into discrete bin

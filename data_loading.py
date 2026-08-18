@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """Loading and aggregation utilities for energy-resolved SimSET/STIR data.
 
 The functions in this module read the converted energy-resolved projection

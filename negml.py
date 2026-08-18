@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """NEGML coefficient-estimation and initialisation utilities.
 
 This module contains the one-dimensional weighted fitting used to initialise

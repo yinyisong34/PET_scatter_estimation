@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 """High-level workflows for applying NEGML to global and regional EBSE models.
 
 This module coordinates energy-PDF selection, basis-function construction,
