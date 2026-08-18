@@ -103,11 +103,11 @@ def mask_the_sinogram_with_energy_bin_info(mask, sinogram_with_energy_bin_info):
     sinogram_inside_mask = sinogram_with_energy_bin_info * mask_expanded
     return sinogram_inside_mask
 
-def c0123_sinogram_with_energy_info_in(true_mask, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
+def c0123_sinogram_with_energy_info_in(mask, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info):
     # (10, 10, 1, 12, 32, 55)
-    c0_sinogram_with_energy_info_in = mask_the_sinogram_with_energy_bin_info(true_mask, c0_sinogram_with_energy_info)
-    c1_sinogram_with_energy_info_in= mask_the_sinogram_with_energy_bin_info(true_mask, c1_sinogram_with_energy_info)
-    c2_sinogram_with_energy_info_in= mask_the_sinogram_with_energy_bin_info(true_mask, c2_sinogram_with_energy_info)
-    c3_sinogram_with_energy_info_in = mask_the_sinogram_with_energy_bin_info(true_mask, c3_sinogram_with_energy_info)
+    c0_sinogram_with_energy_info_in = mask_the_sinogram_with_energy_bin_info(mask, c0_sinogram_with_energy_info)
+    c1_sinogram_with_energy_info_in= mask_the_sinogram_with_energy_bin_info(mask, c1_sinogram_with_energy_info)
+    c2_sinogram_with_energy_info_in= mask_the_sinogram_with_energy_bin_info(mask, c2_sinogram_with_energy_info)
+    c3_sinogram_with_energy_info_in = mask_the_sinogram_with_energy_bin_info(mask, c3_sinogram_with_energy_info)
     return c0_sinogram_with_energy_info_in, c1_sinogram_with_energy_info_in, c2_sinogram_with_energy_info_in, c3_sinogram_with_energy_info_in
 

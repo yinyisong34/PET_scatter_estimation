@@ -1,3 +1,14 @@
+"""
+Energy PDF estimation utilities.
+
+Parts of the non-scatter and scatter PDF estimation implemented in this
+module are adapted from the previous work of Yifan Ding:
+[GitHub repository URL].
+
+The original notebook-based implementation has been reorganised and
+extended for the data format and regional PDF analysis used in this project.
+"""
+
 # import sirf.STIR as PET
 import numpy as np
 import math
@@ -28,6 +39,13 @@ def estimate_nonscatter_PDF(resolution_percentage, energies):
 
 
 def estimate_scatter_PDF(total_1D_histogram, PDF_nonscatter, energies): 
+    """
+    Estimate the scatter energy PDF.
+
+    Adapted from the PDF-estimation procedure implemented by
+    Ian [Surname] in [repository/notebook reference], with modifications
+    for the analysis workflow used in this project.
+    """
     # Find the total contribution of unscattered photons and compare it with (c_0 + c_1)
     total_1D_histogram_window = 0
     for i in range(6,10):
