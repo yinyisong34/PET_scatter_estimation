@@ -165,7 +165,6 @@ def procedure_with_avg_z_axis_no_mask(total_histogram, PDF_nonscatter, PDF_scatt
     y1_E, y2_E = negml.prompt_histogram_1D_y1_and_y2 (total_histogram)
 
     theta = negml.initialize_coefficients_for_NEGML(negml.L, A_bin, y1_E, y2_E)
-    print(theta)
 
 
     basis = basis_functions.derive_shared_1d_factorised_basis(U_E, S_E, dE)
@@ -178,7 +177,6 @@ def procedure_with_avg_z_axis_no_mask(total_histogram, PDF_nonscatter, PDF_scatt
     theta_init = theta,
     n_iter=100
     )
-    print(theta)
 
     sigma_negml = multi_micro_negml_4param_avg_z_axis(sino_shape, sinogram_with_energy_bin_info, basis, theta, n_iter=100)
   
@@ -297,7 +295,7 @@ def procedure_with_avg_z_axis_basis_for_each_mask(pixel_width, pixel_length, Fun
     """
     Y_avg = np.mean(sinogram_with_energy_bin_info, axis=3)
     
-    sigma_negml = np.zeros((4,) + sino_shape) #(4, 1, 12, 32, 55)
+    sigma_negml = np.zeros((4,) + sino_shape) #(4, 1, 144, 32, 55)
 
     pixel_width = int(pixel_width) 
     pixel_length = int(pixel_length)    
@@ -403,7 +401,7 @@ def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PD
     """
     Y_avg = np.mean(sinogram_with_energy_bin_info, axis=3)
 
-    sigma_negml = np.zeros((4,) + sino_shape) #(4, 1, 12, 32, 55)
+    sigma_negml = np.zeros((4,) + sino_shape) #(4, 1, 144, 32, 55)
 
     # true U true S
     if (PDF_nonscatter_true_or_predicted == "true") and (PDF_scatter_true_or_predicted == "true"):
@@ -449,6 +447,6 @@ def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PD
     elif (Func_derive_basis == basis_functions.derive_shared_1d_factorised_basis):
         basis = basis_functions.derive_shared_1d_factorised_basis(nonscatter1_in_pdf, scatter1_in_pdf, dE)
 
-    sigma_negml = negml.negml_4param(total_histogram_inside_mask, basis)
+    sigma_negml = negml.negml_4param(total_histogram_inside_mask, basis=basis, theta_init=theta)
   
     return sigma_negml
