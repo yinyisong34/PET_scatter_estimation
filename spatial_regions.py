@@ -8,7 +8,7 @@ components."""
 
 import numpy as np
 
-def creat_mask_at(i,j):
+def create_mask_at(i,j):
     """Create a one-pixel boolean mask on the 32-by-55 spatial plane.
     
     Parameters

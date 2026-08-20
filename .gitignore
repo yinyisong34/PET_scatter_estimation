@@ -1,0 +1,75 @@
+# ============================================================
+# Generated SimSET activity / attenuation volume files
+# ============================================================
+
+activity_cylinder.ahv
+activity_cylinder.hv
+activity_cylinder.v
+
+attenuation_cylinder.ahv
+attenuation_cylinder.hv
+attenuation_cylinder.v
+
+
+# ============================================================
+# Large simulation outputs
+# ============================================================
+
+# Ignore local simulation-data directories
+simulations/
+simulation_data/
+data/raw/
+
+# Common large/generated data formats
+*.npy
+*.npz
+*.h5
+*.hdf5
+
+
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+
+# ============================================================
+# Jupyter Notebook
+# ============================================================
+
+.ipynb_checkpoints/
+
+
+# ============================================================
+# IDE / editor files
+# ============================================================
+
+.vscode/
+.idea/
+
+
+# ============================================================
+# Operating-system files
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ============================================================
+# Temporary / backup files
+# ============================================================
+
+*.tmp
+*.temp
+*.bak
+*~

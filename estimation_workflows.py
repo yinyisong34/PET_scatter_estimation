@@ -42,23 +42,13 @@ def procedure_with_all_z_axis_no_mask(total_histogram, PDF_nonscatter, PDF_scatt
     """
     U_E = np.array(PDF_nonscatter)
     S_E = np.array(PDF_scatter)
-    A_bin  = negml.system_matrix_A(U_E, S_E, 20)
+    A_bin  = negml.system_matrix_A(U_E, S_E, dE)
 
     y1_E, y2_E = negml.prompt_histogram_1D_y1_and_y2 (total_histogram)
 
     theta = negml.initialize_coefficients_for_NEGML(negml.L, A_bin, y1_E, y2_E)
 
-
     basis = basis_functions.derive_shared_1d_factorised_basis(U_E, S_E, dE)
-
-
-    theta = negml.negml_4param(
-    y_2D=total_histogram,
-    basis=basis,
-    r_hat_2D=None,        # or your random estimate if you have one
-    theta_init = theta,
-    n_iter=100
-    )
 
     sigma_negml = negml.multi_micro_negml_4param(sino_shape, sinogram_with_energy_bin_info, basis, theta, n_iter=100)
   
@@ -160,23 +150,13 @@ def procedure_with_avg_z_axis_no_mask(total_histogram, PDF_nonscatter, PDF_scatt
     """
     U_E = np.array(PDF_nonscatter)
     S_E = np.array(PDF_scatter)
-    A_bin  = negml.system_matrix_A(U_E, S_E, 20)
+    A_bin  = negml.system_matrix_A(U_E, S_E, dE)
 
     y1_E, y2_E = negml.prompt_histogram_1D_y1_and_y2 (total_histogram)
 
     theta = negml.initialize_coefficients_for_NEGML(negml.L, A_bin, y1_E, y2_E)
 
-
     basis = basis_functions.derive_shared_1d_factorised_basis(U_E, S_E, dE)
-
-
-    theta = negml.negml_4param(
-    y_2D=total_histogram,
-    basis=basis,
-    r_hat_2D=None,        # or your random estimate if you have one
-    theta_init = theta,
-    n_iter=100
-    )
 
     sigma_negml = multi_micro_negml_4param_avg_z_axis(sino_shape, sinogram_with_energy_bin_info, basis, theta, n_iter=100)
   
@@ -186,11 +166,13 @@ def procedure_with_avg_z_axis_no_mask(total_histogram, PDF_nonscatter, PDF_scatt
 
 def single_micro_negml_4param_avg_z_axis(i, pixel_width, j, pixel_length, Y_avg, basis, theta_init_bin, sigma_negml, n_iter=100):
     """Fit all pixels belonging to one rectangular spatial region.
-    
+
     Each non-empty view--tangential pixel in the selected region is fitted using
-    the same region-specific basis and supplied initial coefficient vector.
-    The energy data are assumed to have already been averaged over the axial
-    dimension, and each fitted result is copied across all axial positions.
+    the same region-specific basis. The relative fractions of the supplied
+    region-level initial coefficients are rescaled to the total event count of
+    each individual pixel before NEGML fitting. The energy data are assumed to
+    have already been averaged over the axial dimension, and each fitted result
+    is copied across all axial positions.
     
     Parameters
     ----------
@@ -215,6 +197,8 @@ def single_micro_negml_4param_avg_z_axis(i, pixel_width, j, pixel_length, Y_avg,
     numpy.ndarray
         The updated ``sigma_negml`` coefficient array.
     """
+    fraction = theta_init_bin / np.maximum(np.sum(theta_init_bin), 1e-8)
+
     for m in range(pixel_width):
         for n in range(pixel_length):
             
@@ -223,10 +207,12 @@ def single_micro_negml_4param_avg_z_axis(i, pixel_width, j, pixel_length, Y_avg,
 
             if N_bin > 0:
 
+                theta_init_pixel = fraction * N_bin
+
                 sigma_result = negml.negml_4param(
                     y_2D=y_2D_bin,
                     basis=basis,
-                    theta_init=theta_init_bin,
+                    theta_init=theta_init_pixel,
                     n_iter=n_iter
                 )
 
@@ -305,7 +291,7 @@ def procedure_with_avg_z_axis_basis_for_each_mask(pixel_width, pixel_length, Fun
             mask = np.zeros((32,55))
             for m in range(pixel_width):
                 for n in range(pixel_length):
-                    mask += spatial_regions.creat_mask_at( i * pixel_width + m, j * pixel_length + n)
+                    mask += spatial_regions.create_mask_at( i * pixel_width + m, j * pixel_length + n)
 
             mask = mask.astype(bool)
 
@@ -321,7 +307,7 @@ def procedure_with_avg_z_axis_basis_for_each_mask(pixel_width, pixel_length, Fun
                 nonscatter1_in_pdf, scatter1_in_pdf, nonscatter2_in_pdf, scatter2_in_pdf = spatial_regions.true_pdf_inside_mask(mask, energies, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info)
                 nonscatter1_in_pdf = PDF_nonscatter
                 nonscatter2_in_pdf = PDF_nonscatter
-                total_histogram_inside_mask = total_histogram_inside_mask(mask, Y_avg)
+                total_histogram_inside_mask = spatial_regions.total_histogram_inside_mask(mask, Y_avg)
                 y1_E, y2_E = negml.prompt_histogram_1D_y1_and_y2 (total_histogram_inside_mask)
                                 
             # true U predicted S   
@@ -358,7 +344,7 @@ def procedure_with_avg_z_axis_basis_for_each_mask(pixel_width, pixel_length, Fun
   
     return sigma_negml
 
-def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PDF_nonscatter_true_or_predicted, PDF_nonscatter, PDF_scatter_true_or_predicted, sino_shape, sinogram_with_energy_bin_info,  c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info, energies = energies, dE = 20):
+def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PDF_nonscatter_true_or_predicted, PDF_nonscatter, PDF_scatter_true_or_predicted, sino_shape, sinogram_with_energy_bin_info,  c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info, energies = energies, dE = 20, initial_coeff_est=True):
     """Fit one selected spatial mask using a chosen basis construction.
     
     This diagnostic workflow derives the requested true or predicted PDFs
@@ -388,6 +374,10 @@ def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PD
         Energy-bin centres.
     dE : float, optional
         Energy-bin width in keV.
+    initial_coeff_est : bool, optional
+        If True, estimate the initial NEGML coefficients from the marginal
+        energy spectra. If False, NEGML uses its default coefficient
+        initialisation. Default is True.
     
     Returns
     -------
@@ -414,7 +404,7 @@ def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PD
         nonscatter1_in_pdf, scatter1_in_pdf, nonscatter2_in_pdf, scatter2_in_pdf = spatial_regions.true_pdf_inside_mask(mask, energies, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info)
         nonscatter1_in_pdf = PDF_nonscatter
         nonscatter2_in_pdf = PDF_nonscatter
-        total_histogram_inside_mask = total_histogram_inside_mask(mask, Y_avg)
+        total_histogram_inside_mask = spatial_regions.total_histogram_inside_mask(mask, Y_avg)
         y1_E, y2_E = negml.prompt_histogram_1D_y1_and_y2 (total_histogram_inside_mask)
                                 
     # true U predicted S   
@@ -438,7 +428,10 @@ def procedure_with_avg_z_axis_basis_for_single_pixel(mask, Func_derive_basis, PD
     S_E = np.array(scatter1_in_pdf)
     A_bin  = negml.system_matrix_A(U_E, S_E, dE)
 
-    theta = negml.initialize_coefficients_for_NEGML(negml.L, A_bin, y1_E, y2_E)
+    if (initial_coeff_est == True):
+        theta = negml.initialize_coefficients_for_NEGML(negml.L, A_bin, y1_E, y2_E)
+    else:
+        theta = None
 
     if (Func_derive_basis == basis_functions.derive_ground_truth_2d_basis):
         basis = basis_functions.derive_ground_truth_2d_basis(mask, c0_sinogram_with_energy_info, c1_sinogram_with_energy_info, c2_sinogram_with_energy_info, c3_sinogram_with_energy_info)

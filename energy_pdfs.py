@@ -1,3 +1,11 @@
+# Portions of this file are adapted from:
+# Yifan Ding, "Evaluation of Energy-based Scatter Estimation in
+# Positron-Emission Tomography"
+# https://github.com/IanDing404/Evaluation-of-Energy-based-Scatter-Estimation-in-Positron-Emission-Tomography
+#
+# Modifications by Yinyi Song are licensed under the Apache License 2.0.
+# SPDX-License-Identifier: Apache-2.0
+
 """Energy PDF estimation utilities for the EBSE analysis.
 
 This module derives simulation-based ground-truth one-dimensional energy
@@ -5,11 +13,10 @@ PDFs and estimates the predicted non-scatter and scatter PDFs used to build
 the factorised energy basis functions.
 
 Parts of the non-scatter and scatter PDF estimation implemented in this
-module are adapted from the previous work of Yifan Ding:
-[GitHub repository URL].
-
-The original notebook-based implementation has been reorganised and
-extended for the data format and regional PDF analysis used in this project."""
+module are adapted from the previous work of Yifan Ding. The original
+notebook-based implementation has been reorganised and extended for the
+data format and regional PDF analysis used in this project.
+"""
 
 # import sirf.STIR as PET
 import numpy as np
