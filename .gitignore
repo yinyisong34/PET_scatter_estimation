@@ -16,7 +16,6 @@ attenuation_cylinder.v
 # ============================================================
 
 # Ignore local simulation-data directories
-simulations/
 simulation_data/
 data/raw/
 
